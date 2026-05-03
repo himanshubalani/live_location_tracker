@@ -38,9 +38,15 @@ async function main() {
 
   app.use(express.static(path.resolve('./public')));
 
+  // Starting the server IMMEDIATELY so Google Cloud Run knows it's alive
+const PORT = process.env.PORT || 8080; // Cloud Run prefers 8080
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running and bound to 0.0.0.0 on port ${PORT}`);
+});
+
   // ==========================================
   // Kafka Producer & Consumer Setup
-  // ==========================================
+  try {
   const kafkaProducer = kafkaClient.producer();
   await kafkaProducer.connect();
 
@@ -61,6 +67,9 @@ async function main() {
       io.emit('server:location:update', data);
     },
   });
+  } catch (error) {
+  console.error("❌ KAFKA CONNECTION FAILED:", error);
+}
 
   // Socket.IO Setup with Authentication
  
@@ -110,7 +119,6 @@ async function main() {
     });
   });
 
-  server.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
 }
 
 main();
