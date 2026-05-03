@@ -5,7 +5,7 @@ A real-time, high-throughput live location tracking system built with **Node.js,
 This system allows authenticated users to share their live location and see other connected users moving on a map in real time.
 
 ## Demo Video
-[YouTube Unlisted Link To be Added Here]
+[Live location tracker demo](https://youtu.be/k0k8iqBzlZw)
 
 ## Tech Stack
 - **Frontend:** HTML/CSS/JavaScript, Leaflet.js (Maps)
