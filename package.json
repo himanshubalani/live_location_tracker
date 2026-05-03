@@ -1,0 +1,27 @@
+{
+  "name": "kafka-learning",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.33.0",
+  "dependencies": {
+    "@auth0/auth0-spa-js": "^2.19.2",
+    "auth0-spa-js": "^1.6.5",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-openid-connect": "^2.20.2",
+    "kafkajs": "^2.2.4",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.0"
+  }
+}

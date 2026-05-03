@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live Location Tracker</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+      body { margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+      #header { 
+        background: #111827; color: #fff; padding: 16px 24px; 
+        display: flex; justify-content: space-between; align-items: center; 
+      }
+      #map { height: calc(100vh - 60px); width: 100%; z-index: 1; }
+      .btn { 
+        background: #3b82f6; color: white; border: none; padding: 8px 16px; 
+        cursor: pointer; border-radius: 6px; text-decoration: none; font-size: 14px;
+      }
+      .btn-danger { background: #ef4444; }
+    </style>
+  </head>
+  <body>
+    <div id="header">
+      <div id="status">Checking authentication...</div>
+      <div id="actions"></div>
+    </div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+      let map, socket, currentUser;
+      let isFirstLocation = true;
+      const remoteMarkers = new Map();
+
+      // Initialize map (Default to India)
+      map = L.map('map').setView([20.5937, 78.9629], 5);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+      async function initAuth() {
+        const res = await fetch('/api/user');
+        const data = await res.json();
+        
+        if (data.authenticated) {
+          currentUser = data.user;
+          document.getElementById('status').innerText = `Logged in as: ${currentUser.name || currentUser.email}`;
+          document.getElementById('actions').innerHTML = `<a href="/logout" class="btn btn-danger">Logout</a>`;
+          initTracking();
+        } else {
+          document.getElementById('status').innerText = `You must be logged in to view and share locations.`;
+          document.getElementById('actions').innerHTML = `<a href="/login" class="btn">Login</a>`;
+        }
+      }
+
+      function initTracking() {
+        socket = io({ auth: { user: currentUser } });
+
+        socket.on('server:location:update', (data) => {
+          if (data.disconnect) {
+            removeMarker(data.id);
+            return;
+          }
+
+          const { id, name, latitude, longitude } = data;
+          
+          if (!remoteMarkers.has(id)) {
+            const marker = L.marker([latitude, longitude]).addTo(map).bindPopup(name || 'User');
+            if (id === currentUser.sub) marker.openPopup();
+            remoteMarkers.set(id, { marker, timeout: createTimeout(id) });
+          } else {
+            const userData = remoteMarkers.get(id);
+            userData.marker.setLatLng([latitude, longitude]); // Update UI
+            clearTimeout(userData.timeout);
+            userData.timeout = createTimeout(id); // Reset Staleness Timer
+          }
+        });
+
+        startLocationUpdates();
+      }
+
+      function createTimeout(id) {
+        return setTimeout(() => removeMarker(id), 30000); // 30s Staleness expiry
+      }
+
+      function removeMarker(id) {
+        if (remoteMarkers.has(id)) {
+          map.removeLayer(remoteMarkers.get(id).marker);
+          remoteMarkers.delete(id);
+        }
+      }
+
+      function startLocationUpdates() {
+        if ('geolocation' in navigator) {
+          setInterval(() => {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                const { latitude, longitude } = position.coords;
+                if (isFirstLocation) {
+                  map.flyTo([latitude, longitude], 14);
+                  isFirstLocation = false;
+                }
+                if (socket) socket.emit('client:location:update', { latitude, longitude });
+              },
+              (err) => console.warn('Geo Error:', err),
+              { enableHighAccuracy: true }
+            );
+          }, 5000); // Broadcast interval
+        } else {
+          alert('Geolocation not supported by your browser');
+        }
+      }
+
+      window.addEventListener('load', initAuth);
+    </script>
+  </body>
+</html>
