@@ -4,7 +4,7 @@ import path from 'node:path';
 import express from 'express';
 import { Server } from 'socket.io';
 import { auth } from 'express-openid-connect';
-import { kafkaClient } from './kafka-client.js';
+import { kafkaClient } from './kafka-client-local.js';
 
 async function main() {
   const PORT = process.env.PORT || 8000;
@@ -38,21 +38,23 @@ async function main() {
 
   app.use(express.static(path.resolve('./public')));
 
-  // Starting the server IMMEDIATELY so Google Cloud Run knows it's alive
-const PORT = process.env.PORT || 8080; // Cloud Run prefers 8080
+
+
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running and bound to 0.0.0.0 on port ${PORT}`);
 });
 
   // ==========================================
   // Kafka Producer & Consumer Setup
-  try {
-  const kafkaProducer = kafkaClient.producer();
-  await kafkaProducer.connect();
 
+    const kafkaProducer = kafkaClient.producer();
   const kafkaConsumer = kafkaClient.consumer({
     groupId: `socket-server-${Date.now()}`, 
   });
+
+  try {
+  await kafkaProducer.connect();
+
   await kafkaConsumer.connect();
 
   await kafkaConsumer.subscribe({
