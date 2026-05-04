@@ -4,7 +4,7 @@ import path from 'node:path';
 import express from 'express';
 import { Server } from 'socket.io';
 import { auth } from 'express-openid-connect';
-import { kafkaClient } from './kafka-client-local.js';
+import { kafkaClient } from './kafka-client.js';
 
 async function main() {
   const PORT = process.env.PORT || 8000;
